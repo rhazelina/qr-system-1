@@ -1,59 +1,42 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# QR Attendance API (Laravel 12 + Sail/Octane/Reverb)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API-only QR-based attendance system for sekolah roles (admin, waka/kesiswaan, guru, siswa). Stack includes Laravel Octane, Reverb broadcasting, Sanctum auth tokens, Telescope observability, Simple QrCode, and CSV/Excel-friendly exports.
 
-## About Laravel
+## Quick start
+- Copy env & deps: `cp .env.example .env` (or use existing), `composer install`, `bun install`
+- Boot Sail (MariaDB/Redis/queues): `./vendor/bin/sail up -d`
+- Generate key & migrate: `./vendor/bin/sail artisan key:generate && ./vendor/bin/sail artisan migrate`
+- Run dev stack (Octane + queue + Vite): `./vendor/bin/sail artisan octane:start --watch --host=0.0.0.0 --port=8000`
+- (Optional) Telescope: `./vendor/bin/sail artisan telescope:install && ./vendor/bin/sail artisan migrate`
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Core domain
+- Users (`user_type`: admin|teacher|student) with profiles: `admin_profiles`, `teacher_profiles` (NIP, homeroom, subject), `student_profiles` (NISN, NIS, class, gender, address).
+- Classes & schedules (link teacher+class, semester/year/time).
+- QR sessions (`qrcodes`): token, type (student|teacher), schedule, issued_by, expire/active.
+- Attendance: attendee_type (student|teacher), status (present/late/excused/sick/absent), checked_in_at, schedule, QR link.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## API (routes/api.php)
+- Auth: `POST /auth/login` (username/email + password) → token; `GET /me`; `POST /auth/logout`.
+- Admin-only CRUD: `/classes`, `/teachers`, `/students`, `/schedules` (create/update/delete).
+- Admin/Teacher: `GET /schedules`, `GET /schedules/{id}`; QR lifecycle `GET /qrcodes/active`, `POST /qrcodes/generate` (schedule_id, type, optional expires), `POST /qrcodes/{token}/revoke`.
+- Attendance:
+  - Scan QR (student/teacher) `POST /attendance/scan` with `token`.
+  - View per schedule `GET /attendance/schedules/{schedule}` (admin/teacher).
+  - Mark excuse/status `POST /attendance/{attendance}/excuse` (admin/teacher).
+  - Export CSV `GET /attendance/export?schedule_id=` (admin/teacher).
+All protected with Sanctum; role guard via middleware `role:{admin|teacher|student}`.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Real-time (Reverb)
+- Channels: `schedules.{id}` broadcast events.
+  - `qr.generated` payload: token, type, schedule_id, expires_at.
+  - `attendance.recorded` payload: attendee_type, schedule_id, status, name.
 
-## Learning Laravel
+## Flows (ringkas)
+- Admin input guru/siswa/kelas/jadwal → sistem siap.
+- Waka/kesiswaan melihat rekap; wali kelas bisa generate QR siswa/guru (homeroom) & koreksi status.
+- Guru melihat jadwal, generate QR sesi, siswa scan untuk presensi, guru scan/klik hadir di akhir jam.
+- Rekap dapat diekspor CSV; monitoring real-time via Reverb.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Testing
+- PHP lint run via `php -l` (already clean).
+- Add seeds/factories for roles before manual testing; use Postman/Thunder Client with Bearer token from `/auth/login`.
