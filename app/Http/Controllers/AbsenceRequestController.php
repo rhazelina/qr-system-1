@@ -9,6 +9,7 @@ use App\Models\StudentProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AbsenceRequestController extends Controller
 {
@@ -44,12 +45,26 @@ class AbsenceRequestController extends Controller
         $student = StudentProfile::with('classRoom')->findOrFail($data['student_id']);
         $user = $request->user();
 
+        if ($user->user_type === 'student') {
+            if (!optional($user->studentProfile)->is_class_officer) {
+                abort(403, 'Pengurus kelas saja yang boleh mengajukan');
+            }
+        }
+
         if ($user->user_type === 'teacher') {
-            $teacherId = optional($user->teacherProfile)->id;
+            $teacherProfile = $user->teacherProfile
+                ?? \App\Models\TeacherProfile::where('user_id', $user->id)->first();
+            $teacherId = $teacherProfile?->id;
             $classRoom = $student->classRoom;
 
             $isHomeroom = $classRoom && $classRoom->homeroomTeacher && $classRoom->homeroomTeacher->id === $teacherId;
-            $isTeaching = $classRoom && $classRoom->schedules()->where('teacher_id', $teacherId)->exists();
+            $isTeaching = $classRoom
+                ? $classRoom->schedules()->where('teacher_id', $teacherId)->exists()
+                : ($student->class_id
+                    ? \App\Models\Schedule::where('class_id', $student->class_id)
+                        ->where('teacher_id', $teacherId)
+                        ->exists()
+                    : false);
 
             if (!$isHomeroom && !$isTeaching) {
                 abort(403, 'Guru tidak boleh mengajukan untuk kelas ini');
@@ -68,6 +83,14 @@ class AbsenceRequestController extends Controller
                 'status' => 'pending',
             ]);
         });
+
+        Log::info('absence.request.created', [
+            'request_id' => $absenceRequest->id,
+            'student_id' => $absenceRequest->student_id,
+            'class_id' => $absenceRequest->class_id,
+            'requested_by' => $absenceRequest->requested_by,
+            'type' => $absenceRequest->type,
+        ]);
 
         AbsenceRequestCreated::dispatch($absenceRequest);
 
@@ -91,6 +114,11 @@ class AbsenceRequestController extends Controller
             'approver_signature' => $data['approver_signature'] ?? null,
         ]);
 
+        Log::info('absence.request.approved', [
+            'request_id' => $absenceRequest->id,
+            'approved_by' => $absenceRequest->approved_by,
+        ]);
+
         AbsenceRequestUpdated::dispatch($absenceRequest);
 
         return response()->json($absenceRequest->load(['student.user', 'classRoom', 'requester', 'approver']));
@@ -111,6 +139,11 @@ class AbsenceRequestController extends Controller
             'approved_by' => $request->user()->id,
             'approved_at' => now(),
             'approver_signature' => $data['approver_signature'] ?? null,
+        ]);
+
+        Log::info('absence.request.rejected', [
+            'request_id' => $absenceRequest->id,
+            'approved_by' => $absenceRequest->approved_by,
         ]);
 
         AbsenceRequestUpdated::dispatch($absenceRequest);

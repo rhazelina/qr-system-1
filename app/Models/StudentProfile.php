@@ -29,7 +29,7 @@ class StudentProfile extends Model
 
     public function classRoom(): BelongsTo
     {
-        return $this->belongsTo(Classes::class);
+        return $this->belongsTo(Classes::class, 'class_id');
     }
 
     public function attendances(): HasMany

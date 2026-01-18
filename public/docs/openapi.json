@@ -1,165 +1,1016 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "QR System API",
+    "title": "QRAbsence API",
     "version": "1.0.0",
-    "description": "API documentation for QR System backend."
+    "description": "API documentation for QRAbsence backend."
   },
   "servers": [
-    {"url": "/api"}
+    {
+      "url": "/api"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Schedules"
+    },
+    {
+      "name": "QR"
+    },
+    {
+      "name": "Attendance"
+    },
+    {
+      "name": "Absence"
+    },
+    {
+      "name": "Master"
+    },
+    {
+      "name": "WhatsApp"
+    }
   ],
   "paths": {
-    "/majors": {
-      "get": {"summary": "List majors", "responses": {"200": {"description": "OK"}}},
+    "/auth/login": {
       "post": {
-        "summary": "Create major",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "security": [],
         "requestBody": {
           "required": true,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Major"}}}
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLogin"
+              }
+            }
+          }
         },
-        "responses": {"201": {"description": "Created"}}
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
       }
     },
-    "/classes": {
-      "get": {"summary": "List classes", "responses": {"200": {"description": "OK"}}},
+    "/auth/logout": {
       "post": {
-        "summary": "Create class",
-        "requestBody": {
-          "required": true,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Class"}}}
-        },
-        "responses": {"201": {"description": "Created"}}
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get current user",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/schedules": {
+      "get": {
+        "tags": [
+          "Schedules"
+        ],
+        "summary": "List schedules",
+        "parameters": [
+          {
+            "name": "class_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "2025-01-20"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/schedules/{schedule}": {
+      "get": {
+        "tags": [
+          "Schedules"
+        ],
+        "summary": "Get schedule detail",
+        "parameters": [
+          {
+            "name": "schedule",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Schedule"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/classes/{class}/schedules/bulk": {
       "post": {
+        "tags": [
+          "Schedules"
+        ],
         "summary": "Bulk upsert schedules per day",
         "parameters": [
-          {"name": "class", "in": "path", "required": true, "schema": {"type": "integer"}}
+          {
+            "name": "class",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ScheduleBulk"}}}
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleBulk"
+              }
+            }
+          }
         },
-        "responses": {"200": {"description": "OK"}}
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
-    "/absence-requests": {
-      "get": {"summary": "List absence requests", "responses": {"200": {"description": "OK"}}},
-      "post": {
-        "summary": "Create absence request",
-        "requestBody": {
-          "required": true,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AbsenceRequestCreate"}}}
-        },
-        "responses": {"201": {"description": "Created"}}
-      }
-    },
-    "/absence-requests/{absenceRequest}/approve": {
-      "post": {
-        "summary": "Approve absence request",
-        "parameters": [
-          {"name": "absenceRequest", "in": "path", "required": true, "schema": {"type": "integer"}}
+    "/qrcodes/active": {
+      "get": {
+        "tags": [
+          "QR"
         ],
-        "requestBody": {
-          "required": false,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AbsenceRequestApproval"}}}
-        },
-        "responses": {"200": {"description": "OK"}}
-      }
-    },
-    "/absence-requests/{absenceRequest}/reject": {
-      "post": {
-        "summary": "Reject absence request",
-        "parameters": [
-          {"name": "absenceRequest", "in": "path", "required": true, "schema": {"type": "integer"}}
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AbsenceRequestApproval"}}}
-        },
-        "responses": {"200": {"description": "OK"}}
+        "summary": "List active QR",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/qrcodes/generate": {
       "post": {
+        "tags": [
+          "QR"
+        ],
         "summary": "Generate QR",
         "requestBody": {
           "required": true,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/QrGenerate"}}}
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QrGenerate"
+              }
+            }
+          }
         },
-        "responses": {"201": {"description": "Created"}}
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrGenerateResponse"
+                }
+              }
+            }
+          }
+        }
       }
-    }
-  },
-  "components": {
-    "schemas": {
-      "Major": {
-        "type": "object",
-        "required": ["code", "name"],
-        "properties": {
-          "code": {"type": "string", "example": "RPL"},
-          "name": {"type": "string", "example": "Rekayasa Perangkat Lunak"},
-          "category": {"type": "string", "example": "Teknologi Informasi"}
+    },
+    "/qrcodes/{token}/revoke": {
+      "post": {
+        "tags": [
+          "QR"
+        ],
+        "summary": "Revoke QR",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
         }
-      },
-      "Class": {
-        "type": "object",
-        "required": ["grade", "label"],
-        "properties": {
-          "grade": {"type": "string", "example": "X"},
-          "label": {"type": "string", "example": "RPL 1"},
-          "major_id": {"type": "integer", "example": 1}
+      }
+    },
+    "/attendance/scan": {
+      "post": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Scan QR",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttendanceScan"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
         }
-      },
-      "ScheduleBulk": {
-        "type": "object",
-        "required": ["day", "semester", "year", "items"],
-        "properties": {
-          "day": {"type": "string", "example": "Senin"},
-          "semester": {"type": "integer", "example": 1},
-          "year": {"type": "integer", "example": 2025},
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["teacher_id", "start_time", "end_time"],
-              "properties": {
-                "subject_name": {"type": "string", "example": "Matematika"},
-                "subject_id": {"type": "integer", "example": 1},
-                "teacher_id": {"type": "integer", "example": 12},
-                "start_time": {"type": "string", "example": "07:00"},
-                "end_time": {"type": "string", "example": "09:40"},
-                "room": {"type": "string", "example": "R-101"}
+      }
+    },
+    "/attendance/recap": {
+      "get": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Monthly recap",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "2025-01"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/attendance/export": {
+      "get": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Export attendance",
+        "parameters": [
+          {
+            "name": "class_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "schedule_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/attendance/schedules/{schedule}/summary": {
+      "get": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Schedule summary",
+        "parameters": [
+          {
+            "name": "schedule",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/attendance/classes/{class}/summary": {
+      "get": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Class summary",
+        "parameters": [
+          {
+            "name": "class",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/attendance/{attendance}/excuse": {
+      "post": {
+        "tags": [
+          "Attendance"
+        ],
+        "summary": "Update excuse",
+        "parameters": [
+          {
+            "name": "attendance",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/absence-requests": {
+      "get": {
+        "tags": [
+          "Absence"
+        ],
+        "summary": "List absence requests",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceRequestList"
+                }
               }
             }
           }
         }
       },
+      "post": {
+        "tags": [
+          "Absence"
+        ],
+        "summary": "Create absence request",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbsenceRequestCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/absence-requests/{absenceRequest}/approve": {
+      "post": {
+        "tags": [
+          "Absence"
+        ],
+        "summary": "Approve absence request",
+        "parameters": [
+          {
+            "name": "absenceRequest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbsenceRequestApproval"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/absence-requests/{absenceRequest}/reject": {
+      "post": {
+        "tags": [
+          "Absence"
+        ],
+        "summary": "Reject absence request",
+        "parameters": [
+          {
+            "name": "absenceRequest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbsenceRequestApproval"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/majors": {
+      "get": {
+        "tags": [
+          "Master"
+        ],
+        "summary": "List majors",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Master"
+        ],
+        "summary": "Create major",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Major"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/classes": {
+      "get": {
+        "tags": [
+          "Master"
+        ],
+        "summary": "List classes",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Master"
+        ],
+        "summary": "Create class",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Class"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/wa/send-text": {
+      "post": {
+        "tags": [
+          "WhatsApp"
+        ],
+        "summary": "Send text",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaText"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/wa/send-media": {
+      "post": {
+        "tags": [
+          "WhatsApp"
+        ],
+        "summary": "Send media",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaMedia"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "AuthLogin": {
+        "type": "object",
+        "required": [
+          "login",
+          "password"
+        ],
+        "properties": {
+          "login": {
+            "type": "string",
+            "example": "admin@school.id"
+          },
+          "password": {
+            "type": "string",
+            "example": "secret123"
+          }
+        }
+      },
+      "AuthLoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "plain-text-token"
+          },
+          "user": {
+            "type": "object"
+          }
+        }
+      },
+      "Major": {
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "RPL"
+          },
+          "name": {
+            "type": "string",
+            "example": "Rekayasa Perangkat Lunak"
+          },
+          "category": {
+            "type": "string",
+            "example": "Teknologi Informasi"
+          }
+        }
+      },
+      "Class": {
+        "type": "object",
+        "required": [
+          "grade",
+          "label"
+        ],
+        "properties": {
+          "grade": {
+            "type": "string",
+            "example": "X"
+          },
+          "label": {
+            "type": "string",
+            "example": "RPL 1"
+          },
+          "major_id": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "Schedule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "day": {
+            "type": "string",
+            "example": "Monday"
+          },
+          "start_time": {
+            "type": "string",
+            "example": "07:00"
+          },
+          "end_time": {
+            "type": "string",
+            "example": "09:40"
+          },
+          "subject_name": {
+            "type": "string",
+            "example": "Matematika"
+          },
+          "title": {
+            "type": "string",
+            "example": "Matematika"
+          },
+          "class_id": {
+            "type": "integer"
+          },
+          "teacher_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "ScheduleListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Schedule"
+            }
+          }
+        }
+      },
+      "ScheduleBulk": {
+        "type": "object",
+        "required": [
+          "day",
+          "semester",
+          "year",
+          "items"
+        ],
+        "properties": {
+          "day": {
+            "type": "string",
+            "example": "Senin"
+          },
+          "semester": {
+            "type": "integer",
+            "example": 1
+          },
+          "year": {
+            "type": "integer",
+            "example": 2025
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "teacher_id",
+                "start_time",
+                "end_time"
+              ],
+              "properties": {
+                "subject_name": {
+                  "type": "string",
+                  "example": "Matematika"
+                },
+                "subject_id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "teacher_id": {
+                  "type": "integer",
+                  "example": 12
+                },
+                "start_time": {
+                  "type": "string",
+                  "example": "07:00"
+                },
+                "end_time": {
+                  "type": "string",
+                  "example": "09:40"
+                },
+                "room": {
+                  "type": "string",
+                  "example": "R-101"
+                }
+              }
+            }
+          }
+        }
+      },
+      "QrGenerate": {
+        "type": "object",
+        "required": [
+          "schedule_id",
+          "type"
+        ],
+        "properties": {
+          "schedule_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "type": {
+            "type": "string",
+            "example": "student"
+          },
+          "expires_in_minutes": {
+            "type": "integer",
+            "example": 15
+          }
+        }
+      },
+      "QrGenerateResponse": {
+        "type": "object",
+        "properties": {
+          "qrcode": {
+            "type": "object"
+          },
+          "qr_svg": {
+            "type": "string",
+            "example": "base64svg"
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      },
+      "AttendanceScan": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "uuid-token"
+          },
+          "device_id": {
+            "type": "integer",
+            "example": 10
+          }
+        }
+      },
       "AbsenceRequestCreate": {
         "type": "object",
-        "required": ["student_id", "type", "start_date", "end_date"],
+        "required": [
+          "student_id",
+          "type",
+          "start_date",
+          "end_date"
+        ],
         "properties": {
-          "student_id": {"type": "integer", "example": 1},
-          "type": {"type": "string", "example": "sick"},
-          "start_date": {"type": "string", "example": "2025-01-10"},
-          "end_date": {"type": "string", "example": "2025-01-12"},
-          "reason": {"type": "string", "example": "Surat dokter"}
+          "student_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "type": {
+            "type": "string",
+            "example": "sick"
+          },
+          "start_date": {
+            "type": "string",
+            "example": "2025-01-10"
+          },
+          "end_date": {
+            "type": "string",
+            "example": "2025-01-12"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Surat dokter"
+          }
         }
       },
       "AbsenceRequestApproval": {
         "type": "object",
         "properties": {
-          "approver_signature": {"type": "string", "example": "data:image/png;base64,..."}
+          "approver_signature": {
+            "type": "string",
+            "example": "data:image/png;base64,..."
+          }
         }
       },
-      "QrGenerate": {
+      "AbsenceRequest": {
         "type": "object",
-        "required": ["schedule_id", "type"],
         "properties": {
-          "schedule_id": {"type": "integer", "example": 1},
-          "type": {"type": "string", "example": "student"},
-          "expires_in_minutes": {"type": "integer", "example": 15}
+          "id": {
+            "type": "integer"
+          },
+          "student_id": {
+            "type": "integer"
+          },
+          "class_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "example": "sick"
+          },
+          "status": {
+            "type": "string",
+            "example": "pending"
+          },
+          "start_date": {
+            "type": "string",
+            "example": "2025-01-10"
+          },
+          "end_date": {
+            "type": "string",
+            "example": "2025-01-12"
+          }
+        }
+      },
+      "AbsenceRequestList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbsenceRequest"
+            }
+          }
+        }
+      },
+      "WaText": {
+        "type": "object",
+        "required": [
+          "to",
+          "message"
+        ],
+        "properties": {
+          "to": {
+            "type": "string",
+            "example": "6281234567890"
+          },
+          "message": {
+            "type": "string",
+            "example": "Pesan WA"
+          }
+        }
+      },
+      "WaMedia": {
+        "type": "object",
+        "required": [
+          "to",
+          "mediaBase64",
+          "filename"
+        ],
+        "properties": {
+          "to": {
+            "type": "string",
+            "example": "6281234567890"
+          },
+          "mediaBase64": {
+            "type": "string",
+            "example": "base64data"
+          },
+          "filename": {
+            "type": "string",
+            "example": "surat-izin.jpg"
+          },
+          "caption": {
+            "type": "string",
+            "example": "Lampiran surat izin"
+          }
         }
       }
     }

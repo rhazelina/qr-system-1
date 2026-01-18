@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppController extends Controller
 {
@@ -50,11 +51,19 @@ class WhatsAppController extends Controller
         $response = $client->post(rtrim($baseUrl, '/').'/'.$endpoint, $payload);
 
         if (!$response->successful()) {
+            Log::warning('whatsapp.send.failed', [
+                'endpoint' => $endpoint,
+                'status' => $response->status(),
+            ]);
             return response()->json([
                 'message' => 'Failed to send WhatsApp message',
                 'error' => $response->json() ?? $response->body(),
             ], $response->status());
         }
+
+        Log::info('whatsapp.send.success', [
+            'endpoint' => $endpoint,
+        ]);
 
         return response()->json([
             'message' => 'Sent',

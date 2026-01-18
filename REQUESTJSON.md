@@ -151,6 +151,15 @@ Use `{BASE_URL}` for your host (e.g., `http://localhost:8000`). All endpoints ar
 }
 ```
 
+## Auth
+`{BASE_URL}/api/auth/login`
+```json
+{
+  "login": "admin@school.id",
+  "password": "secret123"
+}
+```
+
 `{BASE_URL}/api/classes/{class_id}/schedules/bulk`
 ```json
 {

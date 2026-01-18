@@ -7,6 +7,7 @@ use App\Models\Qrcode;
 use App\Models\Schedule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeFacade;
 
@@ -78,6 +79,13 @@ class QrCodeController extends Controller
             'expires_at' => $expiresAt->toIso8601String(),
         ];
 
+        Log::info('qrcode.generated', [
+            'schedule_id' => $qr->schedule_id,
+            'type' => $qr->type,
+            'issued_by' => $qr->issued_by,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ]);
+
         $svg = QrCodeFacade::format('svg')
             ->size(240)
             ->generate(json_encode($payload));
@@ -118,6 +126,12 @@ class QrCodeController extends Controller
         }
 
         $qr->update(['is_active' => false, 'status' => 'expired']);
+
+        Log::info('qrcode.revoked', [
+            'token' => $qr->token,
+            'schedule_id' => $qr->schedule_id,
+            'revoked_by' => $request->user()->id,
+        ]);
 
         return response()->json(['message' => 'QR revoked']);
     }

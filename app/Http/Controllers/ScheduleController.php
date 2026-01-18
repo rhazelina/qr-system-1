@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class ScheduleController extends Controller
@@ -163,6 +164,20 @@ class ScheduleController extends Controller
             }
         });
 
+        $createdIds = $created->pluck('id')->all();
+        $schedules = Schedule::with(['teacher.user', 'class'])
+            ->whereIn('id', $createdIds)
+            ->get();
+
+        Log::info('schedules.bulk.updated', [
+            'class_id' => $class->id,
+            'day' => $day,
+            'semester' => $data['semester'],
+            'year' => $data['year'],
+            'count' => $created->count(),
+            'user_id' => $request->user()->id,
+        ]);
+
         SchedulesBulkUpdated::dispatch($class->id, $day, $data['semester'], $data['year'], $created->count());
 
         return response()->json([
@@ -171,7 +186,7 @@ class ScheduleController extends Controller
             'semester' => $data['semester'],
             'year' => $data['year'],
             'count' => $created->count(),
-            'schedules' => $created->load(['teacher.user', 'class']),
+            'schedules' => $schedules,
         ]);
     }
 

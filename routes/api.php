@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
-Route::middleware('auth:sanctum')->group(function (): void {
+Route::middleware(['auth:sanctum', 'activity', 'throttle:api'])->group(function (): void {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
@@ -55,7 +55,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/qrcodes/active', [QrCodeController::class, 'active']);
         Route::post('/qrcodes/generate', [QrCodeController::class, 'generate']);
         Route::post('/qrcodes/{token}/revoke', [QrCodeController::class, 'revoke']);
-        Route::post('/absence-requests', [AbsenceRequestController::class, 'store']);
     });
 
     Route::middleware('role:admin,teacher,student')->group(function (): void {
@@ -79,9 +78,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/me/devices/{device}', [DeviceController::class, 'destroy']);
     });
 
+    Route::middleware('role:admin,teacher,student')->group(function (): void {
+        Route::post('/absence-requests', [AbsenceRequestController::class, 'store']);
+    });
+
     Route::middleware(['role:student', 'class-officer'])->group(function (): void {
         Route::post('/qrcodes/generate', [QrCodeController::class, 'generate']);
         Route::post('/qrcodes/{token}/revoke', [QrCodeController::class, 'revoke']);
-        Route::post('/absence-requests', [AbsenceRequestController::class, 'store']);
     });
 });

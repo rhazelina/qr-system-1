@@ -1,49 +1,27 @@
-# version: '3.8'
-
 services:
     laravel.test:
         build:
-            context: ./vendor/laravel/sail/runtimes/8.5
+            context: .
             dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-                MYSQL_CLIENT: mariadb-client
-        image: sail-8.5/app
+        image: qrabsence-app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
-            - '${APP_PORT:-8080}:80'
-            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+            - '8000:8000'
         environment:
-            WWWUSER: '${WWWUSER}'
             LARAVEL_SAIL: '1'
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
-            SUPERVISOR_PHP_COMMAND: "/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan octane:start --server=frankenphp --host=0.0.0.0 --admin-port=2019 --port='${APP_PORT:-80}'"
-            XDG_CONFIG_HOME: '/var/www/html/config'
-            XDG_DATA_HOME: '/var/www/html/data'
         volumes:
-            - .:/var/www/html
+            - .:/app
+        working_dir: /app
         networks:
             - sail
         depends_on:
             - mariadb
 
-    frankenphp:
-        build:
-            context: .
-        image: frankenphp:latest
-        entrypoint: ["php","artisan","octane:frankenphp","--workers=1","--max-requests=1"]
-        ports:
-            - "8000:8000"
-        volumes:
-            - .:/app
-        networks:
-            - sail
-
     mariadb:
-        image: 'mariadb:11'
+        image: 'mariadb:latest'
         ports:
             - '${FORWARD_DB_PORT:-3307}:3306'
         environment:
@@ -66,6 +44,17 @@ services:
                 - '--innodb_initialized'
             retries: 3
             timeout: 5s
+
+    vite:
+        image: node:latest
+        working_dir: /app
+        volumes:
+            - .:/app
+        command: sh -c "npm install && rm -f public/hot && npm run build"
+        depends_on:
+            - laravel.test
+        networks:
+            - sail
 
 networks:
     sail:

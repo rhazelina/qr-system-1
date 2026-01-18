@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
@@ -94,6 +95,13 @@ class AttendanceController extends Controller
         ]);
 
         AttendanceRecorded::dispatch($attendance);
+
+        Log::info('attendance.recorded', [
+            'attendance_id' => $attendance->id,
+            'schedule_id' => $attendance->schedule_id,
+            'user_id' => $user->id,
+            'attendee_type' => $attendance->attendee_type,
+        ]);
 
         return response()->json($attendance->load(['student.user', 'teacher.user', 'schedule']));
     }

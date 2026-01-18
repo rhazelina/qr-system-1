@@ -46,6 +46,7 @@
 
 ## API Docs
 - [x] Scalar docs `/docs` + OpenAPI JSON
+- [x] OpenAPI spec diperluas (auth, schedules, QR, attendance, absence, master, WA)
 
 
 ## Another List
