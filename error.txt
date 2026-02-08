@@ -1,0 +1,1 @@
+ERROR_MSG:SQLSTATE[HY000] [2002] Connection refused (Connection: mysql, Host: 127.0.0.1, Port: 3308, Database: db_qr_system, SQL: select * from `classes` order by `created_at` desc)
